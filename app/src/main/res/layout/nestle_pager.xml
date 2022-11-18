@@ -28,7 +28,7 @@
             android:layout_marginBottom="150dp"
             android:layout_height="match_parent">
             <com.google.android.material.appbar.CollapsingToolbarLayout
-                app:layout_scrollFlags="scroll|exitUntilCollapsed"
+                app:layout_scrollFlags="scroll|enterAlwaysCollapsed"
                 android:id="@+id/collapsingLayout"
                 android:tag="collapsingLayout"
                 android:layout_width="match_parent"
@@ -40,6 +40,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="100dp">
                     <TextView
+                        android:onClick="click"
                         android:layout_gravity="top"
                         android:textSize="46sp"
                         android:textColor="@color/white"

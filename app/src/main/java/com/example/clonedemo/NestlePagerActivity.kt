@@ -43,6 +43,7 @@ class NestlePagerActivity:AppCompatActivity() {
         val observable =mNestlePagerBinding.root.findViewWithTag<ViewGroup>("observable") as BrotherLayoutObservable
         observable.setObserver(observer)
     }
+    var flag =false
 
 
 }

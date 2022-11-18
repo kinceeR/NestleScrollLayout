@@ -9,13 +9,43 @@ import kotlin.math.abs
 
 class MineAppbarLayout(context: Context, attributeSet: AttributeSet) :
     AppBarLayout(context, attributeSet) {
-    var expandedFlag =true
+    var TAG ="MineAppbarLayoutTAG"
+    var isConsumed =false //默认本层不处理，透传给兄弟下层
+    var callExpandFlag =false
     private lateinit var appBarLayout:MineAppbarLayout
     private lateinit var pinToolbar: androidx.appcompat.widget.Toolbar
     private lateinit var collapsingLayout:CollapsingToolbarLayout
+
+    private var mOffsetChangedListenerFold = object :OnOffsetChangedListener{
+        override fun onOffsetChanged(appBarLayout: AppBarLayout?, verticalOffset: Int) {
+            val distantY = appBarLayout!!.measuredHeight + verticalOffset
+            if (distantY == 0 && callExpandFlag) {
+                removeOnOffsetChangedListener(this)
+                addOnOffsetChangedListener(mOffsetChangedListenerExpand)
+            }
+        }
+
+    }
+    private var mOffsetChangedListenerExpand= object :OnOffsetChangedListener{
+        override fun onOffsetChanged(appBarLayout: AppBarLayout?, verticalOffset: Int) {
+            val scrollFlag = (collapsingLayout.layoutParams as AppBarLayout.LayoutParams).scrollFlags
+            Log.d(TAG, "verticalOffset: $verticalOffset,pinToolbar:${pinToolbar.measuredHeight},appbar:${appBarLayout?.measuredHeight},scrollFlag=$scrollFlag")
+            if(abs(verticalOffset)==0){
+                //监听到完全展开，清除消耗事件标记和 expandCall标记
+                isConsumed = false
+                callExpandFlag = false
+            }else{
+                //监听到offset移动，代表本层消耗事件
+                isConsumed = true
+            }
+        }
+    }
+
     override fun setExpanded(expanded: Boolean, animate: Boolean) {
-        if(expanded==expandedFlag) return
-        expandedFlag =expanded
+        if(callExpandFlag) return
+        callExpandFlag = true
+        removeOnOffsetChangedListener(mOffsetChangedListenerExpand)
+        addOnOffsetChangedListener(mOffsetChangedListenerFold)
         super.setExpanded(expanded, animate)
     }
 
@@ -24,29 +54,7 @@ class MineAppbarLayout(context: Context, attributeSet: AttributeSet) :
         appBarLayout = findViewWithTag<MineAppbarLayout>("appbarLayout")
         pinToolbar = findViewWithTag<androidx.appcompat.widget.Toolbar>("pinToolbar")
         collapsingLayout = findViewWithTag<CollapsingToolbarLayout>("collapsingLayout")
-        appBarLayout.addOnOffsetChangedListener { appBarLayout, verticalOffset ->
-            val scrollFlag = (collapsingLayout.layoutParams as AppBarLayout.LayoutParams).scrollFlags
-            Log.d("TAG", "verticalOffset: $verticalOffset,pinToolbar:${pinToolbar.measuredHeight},appbar:${appBarLayout.measuredHeight},scrollFlag=$scrollFlag")
-            if(abs(verticalOffset)<50){// 预留容错
-                expandedFlag = true
-                notifyScrollFlag()
-            }
-            val distantY = pinToolbar.measuredHeight-appBarLayout.measuredHeight -verticalOffset
-            if (abs(distantY) < 50) {// 预留容错
-                notifyScrollFlag()
-            }
-        }
-    }
-    private fun notifyScrollFlag(){
-        if(expandedFlag){
-            val params = (collapsingLayout.layoutParams as AppBarLayout.LayoutParams)
-            params.scrollFlags= AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL or AppBarLayout.LayoutParams.SCROLL_FLAG_EXIT_UNTIL_COLLAPSED
-            collapsingLayout.layoutParams = params
-        }else{
-            val params = (collapsingLayout.layoutParams as AppBarLayout.LayoutParams)
-            params.scrollFlags= AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL or AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS_COLLAPSED
-            collapsingLayout.layoutParams = params
-        }
+        appBarLayout.addOnOffsetChangedListener(mOffsetChangedListenerExpand)
     }
 
 }
